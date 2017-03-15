@@ -19,18 +19,21 @@ public class Agent extends TimerTask{
     {
         System.out.println("Agent initiated with: "+agentArgs);
         //parse agentArgs to arguments for Agent
-        new Agent();
+        Agent agent = new Agent();
+        agent.start();
     }
 
     Timer timer = new Timer("Thread Monitoring Agent", true);
 
-    public Agent()
+    public void start()
     {
-        timer.schedule(this, 0, 500);
+        run();
+        timer.schedule(this, 500, 500);
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         long startTime = System.currentTimeMillis();
         checkThreads();
         long endTime = System.currentTimeMillis();
