@@ -3,6 +3,7 @@
  */
 package com.toptal.jvm.monitoring;
 
+import java.io.PrintStream;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +49,10 @@ public class Agent extends TimerTask{
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
-        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size()+" flag: "+blockedToLong());
+        boolean threadsBlocked = blockedToLong();
+        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size()+" flag: "+threadsBlocked);
+        if (threadsBlocked)
+            saveThreadsDump(System.out, threads);
     }
 
     private void cleanUnBlockedThreads()
@@ -71,7 +75,26 @@ public class Agent extends TimerTask{
     {
         long now = new Date().getTime();
         return blockedThreads.values().stream().anyMatch(date ->
-          (now - date.getTime() > 1000)
+            (now - date.getTime() > 1000)
         );
+    }
+
+    private void saveThreadsDump(PrintStream stream, Map<Thread, StackTraceElement[]> threads)
+    {
+        threads.forEach((thread, stack) -> {
+            String deamon = "";
+            if (thread.isDaemon()) deamon = "deamon ";
+            stream.format(
+                "Thread:%d '%s' %sprio=%d %s%n",
+                thread.getId(),
+                thread.getName(),
+                deamon,
+                thread.getPriority(),
+                thread.getState()
+            );
+            for (StackTraceElement line: stack)
+                stream.println("        " + line);
+            stream.println();
+        });
     }
 }
