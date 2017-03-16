@@ -3,7 +3,11 @@
  */
 package com.toptal.jvm.monitoring;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -47,19 +51,22 @@ public class Agent extends TimerTask{
     private void checkThreads()
     {
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
+
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
-        boolean threadsBlocked = blockedToLong();
-        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size()+" flag: "+threadsBlocked);
-        if (threadsBlocked)
-            saveThreadsDump(System.out, threads);
+
+        //printThreadsDump(System.out, threads);
+        if (blockedToLong())
+        {
+            saveThreadsDump(threads);
+        }
     }
 
     private void cleanUnBlockedThreads()
     {
-        blockedThreads.keySet().removeIf(thread -> (
-            thread.getState() != Thread.State.BLOCKED
-        ));
+        blockedThreads.keySet().removeIf(thread ->
+            (thread.getState() != Thread.State.BLOCKED)
+        );
     }
 
     private void addBlockedThreads(Set<Thread> threads)
@@ -79,8 +86,13 @@ public class Agent extends TimerTask{
         );
     }
 
-    private void saveThreadsDump(PrintStream stream, Map<Thread, StackTraceElement[]> threads)
+    private void printThreadsDump(PrintStream stream, Map<Thread, StackTraceElement[]> threads)
     {
+        stream.format(
+            "#Threads: %d, #Blocked: %d%n%n",
+            threads.size(),
+            blockedThreads.size()
+        );
         threads.forEach((thread, stack) -> {
             String deamon = "";
             if (thread.isDaemon()) deamon = "deamon ";
@@ -93,8 +105,31 @@ public class Agent extends TimerTask{
                 thread.getState()
             );
             for (StackTraceElement line: stack)
+            {
                 stream.println("        " + line);
+            }
             stream.println();
         });
+    }
+
+    private String newThreadDumpFileName(String root)
+    {
+        try {
+            Files.createDirectories(Paths.get(root));
+        } catch (IOException ex) {
+            System.err.println(ex);
+        }
+        long   millis   = System.currentTimeMillis();
+        String fileName = root + "/threads_dump_" + millis + ".txt";
+        return fileName;
+    }
+
+    private void saveThreadsDump(Map<Thread, StackTraceElement[]> threads){
+        String fileName = newThreadDumpFileName("tmp");
+        try (PrintStream stream = new PrintStream(fileName)) {
+            printThreadsDump(stream, threads);
+        } catch (FileNotFoundException ex) {
+            System.err.println(ex);
+        }
     }
 }
