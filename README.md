@@ -3,6 +3,31 @@
 Monitor JVM threads and save a threads dump when threads get blocked for given 
 time.
 
+## Usage
+
+```bash
+java -javaagent:dist/jvm-monitoring-agent.jar=threshold=1000,debug ...rest of command
+```
+
+## Configuration flags/options
+
+### `debug`
+
+Enables debugging output - in cases you suspect something is wrong it might provide additional information.
+
+### `root_path=...`
+
+Specifies where to save threads dumps.
+
+### `interval=...`
+
+Specifies how often to check thread list for blocked threads. (Milliseconds)
+
+### `threshold=...`
+
+Specifies how thread needs to be blocked before dumps will be saved. (Milliseconds)
+
+
 # Examples
 
 Examples in `examples/` are meant to check this library manually.
@@ -16,11 +41,15 @@ java -javaagent:dist/jvm-monitoring-agent.jar -jar examples/empty/dist/empty.jar
 ls -l tmp/
 ```
 
+There should be no output from the execution.
+
 ### Check the agent does find blocked threads.
 
 ```bash
 rm tmp/*
 ant && (cd examples/SynchronizedThreads/ && ant) &&
-java -javaagent:dist/jvm-monitoring-agent.jar -jar examples/SynchronizedThreads/dist/SynchronizedThreads.jar
+java -javaagent:dist/jvm-monitoring-agent.jar=threshold=1000,debug -jar examples/SynchronizedThreads/dist/SynchronizedThreads.jar
 ls -l tmp/
 ```
+
+Execution is supposed to show arguments and times it took each second.

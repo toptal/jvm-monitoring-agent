@@ -4,3 +4,4 @@ build/
 !**/nbproject/
 !**/nbproject/build-impl.xml
 !**/nbproject/project.properties
+/tmp/

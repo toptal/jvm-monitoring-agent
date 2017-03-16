@@ -20,22 +20,59 @@ import java.util.WeakHashMap;
  * @author mpapis
  */
 public class Agent extends TimerTask{
-    // agentArgs usaully is k=v,k=v
-    public static void premain(String agentArgs) throws InterruptedException
+    public static void premain(String stringArgs) throws InterruptedException
     {
-        System.out.println("Agent initiated with: "+agentArgs);
-        //parse agentArgs to arguments for Agent
-        Agent agent = new Agent();
+        Agent agent = new Agent(stringArgs);
         agent.start();
     }
 
+    // configuration & defaults
+    boolean debug     = false; //turn on debugging
+    String  root_path = "tmp"; //where to save dumps
+    int     interval  = 1000;  //interval between checks in milliseconds
+    int     threshold = 60000; //how long thread needs to be blocked to save the dump in milliseconds
+
+    // internal
     Timer                     timer          = new Timer("Thread Monitoring Agent", true);
     WeakHashMap<Thread, Date> blockedThreads = new WeakHashMap<>();
+
+    // stringArgs usaully is k=v,k=v
+    public Agent(String stringArgs)
+    {
+        if (stringArgs == null) stringArgs = "";
+        String[] args = stringArgs.split(",");
+        for (String arg: args)
+        {
+            String[] key_value = arg.split("=", 2);
+            switch (key_value[0]) {
+                case "":          break; // in case of no args just skip
+                case "debug":     debug      = true;                           break;
+                case "root":      root_path  = key_value[1];                   break;
+                case "interval":  interval   = Integer.parseInt(key_value[1]); break;
+                case "threshold": threshold  = Integer.parseInt(key_value[1]); break;
+                default:
+                    System.err.println("Monitoring Agent unknown arguments:" + arg);
+                    break;
+            }
+        }
+        log(String.format(
+            "Agent initiated with:%n  root: '%s'%n  interval: %d%n  treshold: %d%n",
+            root_path,
+            interval,
+            threshold
+        ));
+    }
+
+    public void log(String msg)
+    {
+        if (debug)
+            System.err.println(msg);
+    }
 
     public void start()
     {
         run();
-        timer.schedule(this, 500, 500);
+        timer.schedule(this, interval, interval);
     }
 
     @Override
@@ -45,7 +82,7 @@ public class Agent extends TimerTask{
         checkThreads();
         long endTime = System.currentTimeMillis();
         long timeDiff = (endTime - startTime);
-        System.out.println("It took "+timeDiff+"ms");
+        log("It took "+timeDiff+"ms");
     }
 
     private void checkThreads()
@@ -82,7 +119,7 @@ public class Agent extends TimerTask{
     {
         long now = new Date().getTime();
         return blockedThreads.values().stream().anyMatch(date ->
-            (now - date.getTime() > 1000)
+            (now - date.getTime() > threshold)
         );
     }
 
@@ -112,24 +149,23 @@ public class Agent extends TimerTask{
         });
     }
 
-    private String newThreadDumpFileName(String root)
+    private String newThreadDumpFileName()
     {
         try {
-            Files.createDirectories(Paths.get(root));
+            Files.createDirectories(Paths.get(root_path));
         } catch (IOException ex) {
-            System.err.println(ex);
+            log(ex.toString());
         }
-        long   millis   = System.currentTimeMillis();
-        String fileName = root + "/threads_dump_" + millis + ".txt";
-        return fileName;
+        long timeStamp = System.currentTimeMillis();
+        return root_path + "/threads_dump_" + timeStamp + ".txt";
     }
 
     private void saveThreadsDump(Map<Thread, StackTraceElement[]> threads){
-        String fileName = newThreadDumpFileName("tmp");
+        String fileName = newThreadDumpFileName();
         try (PrintStream stream = new PrintStream(fileName)) {
             printThreadsDump(stream, threads);
         } catch (FileNotFoundException ex) {
-            System.err.println(ex);
+            log(ex.toString());
         }
     }
 }
