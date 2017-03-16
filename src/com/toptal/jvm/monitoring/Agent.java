@@ -48,7 +48,7 @@ public class Agent extends TimerTask{
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
-        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size());
+        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size()+" flag: "+blockedToLong());
     }
 
     private void cleanUnBlockedThreads()
@@ -60,14 +60,18 @@ public class Agent extends TimerTask{
 
     private void addBlockedThreads(Set<Thread> threads)
     {
-        threads.forEach(thread -> {
-            if (
-                thread.getState() == Thread.State.BLOCKED &&
-                !blockedThreads.containsKey(thread)
-            )
-            {
-                blockedThreads.put(thread, new Date());
-            }
-        });
+        threads.stream().filter(thread ->
+            (thread.getState() == Thread.State.BLOCKED)
+        ).forEach(thread ->
+            blockedThreads.putIfAbsent(thread, new Date())
+        );
+    }
+
+    private boolean blockedToLong()
+    {
+        long now = new Date().getTime();
+        return blockedThreads.values().stream().anyMatch(date ->
+          (now - date.getTime() > 1000)
+        );
     }
 }
