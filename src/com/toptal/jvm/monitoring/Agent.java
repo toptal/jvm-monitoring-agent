@@ -3,11 +3,12 @@
  */
 package com.toptal.jvm.monitoring;
 
-import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.WeakHashMap;
 
 /**
  *
@@ -23,7 +24,8 @@ public class Agent extends TimerTask{
         agent.start();
     }
 
-    Timer timer = new Timer("Thread Monitoring Agent", true);
+    Timer                     timer          = new Timer("Thread Monitoring Agent", true);
+    WeakHashMap<Thread, Date> blockedThreads = new WeakHashMap<>();
 
     public void start()
     {
@@ -43,17 +45,29 @@ public class Agent extends TimerTask{
 
     private void checkThreads()
     {
-        Set<Map.Entry<Thread, StackTraceElement[]>> threads = Thread.getAllStackTraces().entrySet();
-        System.out.println(" # Threads: "+threads.size());
-        threads.forEach((thread_entry) -> {
-            Thread thread = thread_entry.getKey();
-            StackTraceElement[] stackTrace = thread_entry.getValue();
-            System.out.format(
-                "Thread = %s, Status = %s%n%s%n",
-                thread,
-                thread.getState(),
-                Arrays.toString(stackTrace)
-            );
+        Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
+        cleanUnBlockedThreads();
+        addBlockedThreads(threads.keySet());
+        System.out.println(" # Threads: "+threads.size()+" Blocked: "+blockedThreads.size());
+    }
+
+    private void cleanUnBlockedThreads()
+    {
+        blockedThreads.keySet().removeIf(thread -> (
+            thread.getState() != Thread.State.BLOCKED
+        ));
+    }
+
+    private void addBlockedThreads(Set<Thread> threads)
+    {
+        threads.forEach(thread -> {
+            if (
+                thread.getState() == Thread.State.BLOCKED &&
+                !blockedThreads.containsKey(thread)
+            )
+            {
+                blockedThreads.put(thread, new Date());
+            }
         });
     }
 }
