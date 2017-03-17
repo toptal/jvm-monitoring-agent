@@ -45,9 +45,7 @@ public final class Agent extends TimerTask{
     }
 
     private void parseArgs(String stringArgs) {
-        if (stringArgs == null)
-            stringArgs = "";
-        String[] args = stringArgs.split(",");
+        String[] args = stringArgs == null ? new String[0] : stringArgs.split(",");
         for (String arg: args)
         {
             String[] key_value = arg.split("=", 2);
@@ -143,14 +141,11 @@ public final class Agent extends TimerTask{
             blockedThreads.size()
         );
         threads.forEach((thread, stack) -> {
-            String deamon = "";
-            if (thread.isDaemon())
-                deamon = "deamon ";
             stream.format(
                 "Thread:%d '%s' %sprio=%d %s%n",
                 thread.getId(),
                 thread.getName(),
-                deamon,
+                thread.isDaemon() ? "deamon " : "",
                 thread.getPriority(),
                 thread.getState()
             );
