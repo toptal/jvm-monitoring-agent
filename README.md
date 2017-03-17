@@ -14,6 +14,7 @@ java -javaagent:dist/jvm-monitoring-agent.jar=threshold=1000,debug ...rest of co
 ### `debug`
 
 Enables debugging output - in cases you suspect something is wrong it might provide additional information.
+To debug options problems make it first passed parameter.
 
 ### `root_path=...`
 

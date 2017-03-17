@@ -19,7 +19,7 @@ import java.util.WeakHashMap;
  *
  * @author mpapis
  */
-public class Agent extends TimerTask{
+public final class Agent extends TimerTask{
     public static void premain(String stringArgs) throws InterruptedException
     {
         Agent agent = new Agent(stringArgs);
@@ -51,12 +51,12 @@ public class Agent extends TimerTask{
                 case "interval":  interval   = Integer.parseInt(key_value[1]); break;
                 case "threshold": threshold  = Integer.parseInt(key_value[1]); break;
                 default:
-                    System.err.println("Monitoring Agent unknown arguments:" + arg);
+                    log("Unknown argument:" + arg);
                     break;
             }
         }
         log(String.format(
-            "Agent initiated with:%n  root: '%s'%n  interval: %d%n  treshold: %d%n",
+            "Initiated with:%n  root: '%s'%n  interval: %d%n  treshold: %d%n",
             root_path,
             interval,
             threshold
@@ -66,7 +66,7 @@ public class Agent extends TimerTask{
     public void log(String msg)
     {
         if (debug)
-            System.err.println(msg);
+            System.err.println("[JVM Monitoring Agent] " + msg);
     }
 
     public void start()
