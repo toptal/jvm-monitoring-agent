@@ -20,26 +20,33 @@ import java.util.WeakHashMap;
  * @author mpapis
  */
 public final class Agent extends TimerTask{
+
+    // configuration & defaults
+    private boolean debug     = false; //turn on debugging
+    private String  root_path = "tmp"; //where to save dumps
+    private int     interval  = 1000;  //interval between checks in milliseconds
+    private int     threshold = 60000; //how long thread needs to be blocked to save the dump in milliseconds
+
+    // internal
+    private static final String             NAME           = "JVM Monitoring Agent";
+    private final Timer                     timer          = new Timer(NAME, true);
+    private final WeakHashMap<Thread, Date> blockedThreads = new WeakHashMap<>();
+
     public static void premain(String stringArgs) throws InterruptedException
     {
         Agent agent = new Agent(stringArgs);
         agent.start();
     }
 
-    // configuration & defaults
-    boolean debug     = false; //turn on debugging
-    String  root_path = "tmp"; //where to save dumps
-    int     interval  = 1000;  //interval between checks in milliseconds
-    int     threshold = 60000; //how long thread needs to be blocked to save the dump in milliseconds
-
-    // internal
-    Timer                     timer          = new Timer("Thread Monitoring Agent", true);
-    WeakHashMap<Thread, Date> blockedThreads = new WeakHashMap<>();
-
-    // stringArgs usaully is k=v,k=v
     public Agent(String stringArgs)
     {
-        if (stringArgs == null) stringArgs = "";
+        parseArgs(stringArgs);
+        createRootPath();
+    }
+
+    private void parseArgs(String stringArgs) {
+        if (stringArgs == null)
+            stringArgs = "";
         String[] args = stringArgs.split(",");
         for (String arg: args)
         {
@@ -63,10 +70,12 @@ public final class Agent extends TimerTask{
         ));
     }
 
-    public void log(String msg)
-    {
-        if (debug)
-            System.err.println("[JVM Monitoring Agent] " + msg);
+    private void createRootPath() {
+        try {
+            Files.createDirectories(Paths.get(root_path));
+        } catch (IOException ex) {
+            log(ex.toString());
+        }
     }
 
     public void start()
@@ -85,6 +94,12 @@ public final class Agent extends TimerTask{
         log("It took "+timeDiff+"ms");
     }
 
+    private void log(String msg)
+    {
+        if (debug)
+            System.err.println("[" + NAME + "] " + msg);
+    }
+
     private void checkThreads()
     {
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
@@ -92,11 +107,8 @@ public final class Agent extends TimerTask{
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
 
-        //printThreadsDump(System.out, threads);
         if (blockedToLong())
-        {
             saveThreadsDump(threads);
-        }
     }
 
     private void cleanUnBlockedThreads()
@@ -132,7 +144,8 @@ public final class Agent extends TimerTask{
         );
         threads.forEach((thread, stack) -> {
             String deamon = "";
-            if (thread.isDaemon()) deamon = "deamon ";
+            if (thread.isDaemon())
+                deamon = "deamon ";
             stream.format(
                 "Thread:%d '%s' %sprio=%d %s%n",
                 thread.getId(),
@@ -142,26 +155,15 @@ public final class Agent extends TimerTask{
                 thread.getState()
             );
             for (StackTraceElement line: stack)
-            {
                 stream.println("        " + line);
-            }
             stream.println();
         });
     }
 
-    private String newThreadDumpFileName()
-    {
-        try {
-            Files.createDirectories(Paths.get(root_path));
-        } catch (IOException ex) {
-            log(ex.toString());
-        }
-        long timeStamp = System.currentTimeMillis();
-        return root_path + "/threads_dump_" + timeStamp + ".txt";
-    }
-
     private void saveThreadsDump(Map<Thread, StackTraceElement[]> threads){
-        String fileName = newThreadDumpFileName();
+        long timeStamp  = System.currentTimeMillis();
+        String fileName = root_path + "/threads_dump_" + timeStamp + ".txt";
+
         try (PrintStream stream = new PrintStream(fileName)) {
             printThreadsDump(stream, threads);
         } catch (FileNotFoundException ex) {
