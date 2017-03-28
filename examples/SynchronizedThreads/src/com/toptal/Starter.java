@@ -15,7 +15,7 @@ public class Starter implements Runnable {
 
     public Starter(Synchronized aSynchronized)
     {
-        nested = new Nested(20, aSynchronized);
+        nested = new Nested(100, aSynchronized);
     }
 
     @Override
