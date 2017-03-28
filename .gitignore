@@ -1,7 +1,4 @@
 dist/
 build/
-**/nbproject/*
-!**/nbproject/
-!**/nbproject/build-impl.xml
-!**/nbproject/project.properties
+nbproject/
 /tmp/
