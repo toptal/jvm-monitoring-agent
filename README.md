@@ -26,7 +26,11 @@ Specifies how often to check thread list for blocked threads. (Milliseconds)
 
 ### `threshold=...`
 
-Specifies how thread needs to be blocked before dumps will be saved. (Milliseconds)
+Specifies how long thread needs to be blocked before dumps will be saved. (Milliseconds)
+
+### `delay=...`
+
+Specifies delay between saving consecutive threads dumps. (Milliseconds)
 
 
 # Examples
@@ -49,7 +53,7 @@ There should be no output from the execution.
 ```bash
 rm tmp/*
 ant && (cd examples/SynchronizedThreads/ && ant) &&
-java -javaagent:dist/jvm-monitoring-agent.jar=threshold=1000,debug -jar examples/SynchronizedThreads/dist/SynchronizedThreads.jar
+java -javaagent:dist/jvm-monitoring-agent.jar=debug,threshold=1000,delay=5000 -jar examples/SynchronizedThreads/dist/SynchronizedThreads.jar
 ls -l tmp/
 ```
 

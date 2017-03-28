@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -26,11 +25,16 @@ public final class Agent extends TimerTask{
     private String  root_path = "tmp"; //where to save dumps
     private int     interval  = 1000;  //interval between checks in milliseconds
     private int     threshold = 60000; //how long thread needs to be blocked to save the dump in milliseconds
+    private int     saveDelay = 60000; //how long to wait between saving next dump in milliseconds
 
     // internal
     private static final String             NAME           = "JVM Monitoring Agent";
     private final Timer                     timer          = new Timer(NAME, true);
-    private final WeakHashMap<Thread, Date> blockedThreads = new WeakHashMap<>();
+    private final WeakHashMap<Thread, Long> blockedThreads = new WeakHashMap<>();
+    private long                            lastSave       = 0;
+    private long                            loopStartTime  = 0;
+    private String                          dumpFileName   = "";
+    private boolean                         blockedToLong  = false;
 
     public static void premain(String stringArgs) throws InterruptedException
     {
@@ -55,6 +59,7 @@ public final class Agent extends TimerTask{
                 case "root":      root_path  = key_value[1];                   break;
                 case "interval":  interval   = Integer.parseInt(key_value[1]); break;
                 case "threshold": threshold  = Integer.parseInt(key_value[1]); break;
+                case "delay":     saveDelay  = Integer.parseInt(key_value[1]); break;
                 default:
                     log("Unknown argument:" + arg);
                     break;
@@ -85,11 +90,20 @@ public final class Agent extends TimerTask{
     @Override
     public void run()
     {
-        long startTime = System.currentTimeMillis();
-        checkThreads();
-        long endTime = System.currentTimeMillis();
-        long timeDiff = (endTime - startTime);
-        log("It took "+timeDiff+"ms");
+        loopStartTime     = System.currentTimeMillis();
+        boolean savedDump = checkThreads();
+        long endTime      = System.currentTimeMillis();
+        long timeDiff     = (endTime - loopStartTime);
+
+        String msg = "-" + loopStartTime + "- It took "+timeDiff+"ms";
+        if (blockedToLong)
+            msg += " - threads are blocked";
+        if (savedDump)
+        {
+            lastSave = loopStartTime;
+            msg += " - saved dump: "+dumpFileName;
+        }
+        log(msg);
     }
 
     private void log(String msg)
@@ -98,15 +112,15 @@ public final class Agent extends TimerTask{
             System.err.println("[" + NAME + "] " + msg);
     }
 
-    private void checkThreads()
+    private boolean checkThreads()
     {
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
 
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
+        checkBlockedToLong();
 
-        if (blockedToLong())
-            saveThreadsDump(threads);
+        return blockedToLong && shouldBeSaved() && saveThreadsDump(threads);
     }
 
     private void cleanUnBlockedThreads()
@@ -121,16 +135,21 @@ public final class Agent extends TimerTask{
         threads.stream().filter(thread ->
             (thread.getState() == Thread.State.BLOCKED)
         ).forEach(thread ->
-            blockedThreads.putIfAbsent(thread, new Date())
+            blockedThreads.putIfAbsent(thread, System.currentTimeMillis())
         );
     }
 
-    private boolean blockedToLong()
+    private void checkBlockedToLong()
     {
-        long now = new Date().getTime();
-        return blockedThreads.values().stream().anyMatch(date ->
-            (now - date.getTime() > threshold)
+        long now = System.currentTimeMillis();
+        blockedToLong = blockedThreads.values().stream().anyMatch(date ->
+            (now - date > threshold)
         );
+    }
+
+    private boolean shouldBeSaved()
+    {
+        return lastSave + saveDelay <= loopStartTime;
     }
 
     private void printThreadsDump(PrintStream stream, Map<Thread, StackTraceElement[]> threads)
@@ -155,14 +174,15 @@ public final class Agent extends TimerTask{
         });
     }
 
-    private void saveThreadsDump(Map<Thread, StackTraceElement[]> threads){
-        long timeStamp  = System.currentTimeMillis();
-        String fileName = root_path + "/threads_dump_" + timeStamp + ".txt";
+    private boolean saveThreadsDump(Map<Thread, StackTraceElement[]> threads){
+        dumpFileName = root_path + "/threads_dump_" + loopStartTime + ".txt";
 
-        try (PrintStream stream = new PrintStream(fileName)) {
+        try (PrintStream stream = new PrintStream(dumpFileName)) {
             printThreadsDump(stream, threads);
+            return true;
         } catch (FileNotFoundException ex) {
             log(ex.toString());
+            return false;
         }
     }
 }
