@@ -58,3 +58,7 @@ ls -l tmp/
 ```
 
 Execution is supposed to show arguments and times it took each second.
+
+# License
+
+JVM Monitoring Agent is licensed under GNU Affero General Public License (GNU AGPLv3).
