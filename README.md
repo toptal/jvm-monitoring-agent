@@ -5,8 +5,12 @@ time.
 
 ## Usage
 
+Download the jar from https://github.com/toptal/jvm-monitoring-agent/releases
+
+Add it to the command line of the application you wish to monitor:
+
 ```bash
-java -javaagent:dist/jvm-monitoring-agent.jar=threshold=1000,debug ...rest of command
+java -javaagent:jvm-monitoring-agent-0.9.0.jar=threshold=1000,debug ...rest of command
 ```
 
 ## Configuration flags/options
