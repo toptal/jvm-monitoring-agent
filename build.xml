@@ -9,10 +9,12 @@
     </target>
 
     <target name="jar" depends="compile">
+        <property name="version" value="0.9.0"/>
         <mkdir dir="dist"/>
-        <jar destfile="dist/jvm-monitoring-agent.jar" basedir="build/classes">
+        <jar destfile="dist/jvm-monitoring-agent-${version}.jar" basedir="build/classes">
             <manifest>
                 <attribute name="Premain-Class" value="com.toptal.jvm.monitoring.Agent"/>
+                <attribute name="Package-Version" value="${version}"/>
             </manifest>
         </jar>
     </target>
