@@ -17,5 +17,6 @@
                 <attribute name="Package-Version" value="${version}"/>
             </manifest>
         </jar>
+        <symlink link="dist/jvm-monitoring-agent.jar" resource="jvm-monitoring-agent-${version}.jar" overwrite="true" />
     </target>
   </project>
