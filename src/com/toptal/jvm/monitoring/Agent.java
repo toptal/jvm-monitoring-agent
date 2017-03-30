@@ -72,7 +72,7 @@ public final class Agent extends TimerTask{
             switch (key_value[0]) {
                 case "":          break; // in case of no args just skip
                 case "debug":     debug      = true;                           break;
-                case "root":      root_path  = key_value[1];                   break;
+                case "path":      root_path  = key_value[1];                   break;
                 case "interval":  interval   = Integer.parseInt(key_value[1]); break;
                 case "threshold": threshold  = Integer.parseInt(key_value[1]); break;
                 case "delay":     saveDelay  = Integer.parseInt(key_value[1]); break;

@@ -20,7 +20,7 @@ java -javaagent:jvm-monitoring-agent-0.9.0.jar=threshold=1000,debug ...rest of c
 Enables debugging output - in cases you suspect something is wrong it might provide additional information.
 To debug options problems make it first passed parameter.
 
-### `root_path=...`
+### `path=...`
 
 Specifies where to save threads dumps.
 
