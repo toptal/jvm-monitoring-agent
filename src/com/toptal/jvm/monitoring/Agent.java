@@ -151,7 +151,7 @@ public final class Agent extends TimerTask{
         threads.stream().filter(thread ->
             (thread.getState() == Thread.State.BLOCKED)
         ).forEach(thread ->
-            blockedThreads.putIfAbsent(thread, System.currentTimeMillis())
+            blockedThreads.putIfAbsent(thread, loopStartTime)
         );
     }
 
