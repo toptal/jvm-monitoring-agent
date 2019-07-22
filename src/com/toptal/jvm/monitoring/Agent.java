@@ -1,5 +1,6 @@
 /**
  *  Copyright 2017 Michal Papis <mpapis@gmail.com>
+ *  Copyright 2019 Alexey Shein <alexey.shein@toptal.com>
  *
  *  This file is part of JVM Monitoring Agent.
  *
@@ -119,7 +120,9 @@ public final class Agent extends TimerTask{
             lastSave = loopStartTime;
             msg += " - saved dump: "+dumpFileName;
         }
-        log(msg);
+	if (blockedToLong || savedDump) {
+            log(msg);
+	}
     }
 
     private void log(String msg)
