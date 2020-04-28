@@ -183,7 +183,7 @@ public final class Agent extends TimerTask{
                 "Thread:%d '%s' %sprio=%d %s%n",
                 thread.getId(),
                 thread.getName(),
-                thread.isDaemon() ? "deamon " : "",
+                thread.isDaemon() ? "daemon " : "",
                 thread.getPriority(),
                 thread.getState()
             );
