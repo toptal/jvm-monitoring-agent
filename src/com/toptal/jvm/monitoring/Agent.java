@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.WeakHashMap;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -52,6 +53,8 @@ public final class Agent extends TimerTask{
     private long                            loopStartTime  = 0;
     private String                          dumpFileName   = "";
     private boolean                         blockedToLong  = false;
+    private String                          filterRegexStr = null;
+    private Pattern                         filterPattern  = null;
 
     public static void premain(String stringArgs) throws InterruptedException
     {
@@ -71,12 +74,13 @@ public final class Agent extends TimerTask{
         {
             String[] key_value = arg.split("=", 2);
             switch (key_value[0]) {
-                case "":          break; // in case of no args just skip
-                case "debug":     debug      = true;                           break;
-                case "path":      root_path  = key_value[1];                   break;
-                case "interval":  interval   = Integer.parseInt(key_value[1]); break;
-                case "threshold": threshold  = Integer.parseInt(key_value[1]); break;
-                case "delay":     saveDelay  = Integer.parseInt(key_value[1]); break;
+                case "":            break; // in case of no args just skip
+                case "debug":       debug           = true;                           break;
+                case "path":        root_path       = key_value[1];                   break;
+                case "interval":    interval        = Integer.parseInt(key_value[1]); break;
+                case "threshold":   threshold       = Integer.parseInt(key_value[1]); break;
+                case "delay":       saveDelay       = Integer.parseInt(key_value[1]); break;
+                case "filterRegex": filterRegexStr  = key_value[1];                   break;
                 default:
                     log("Unknown argument:" + arg);
                     break;
@@ -100,6 +104,16 @@ public final class Agent extends TimerTask{
 
     public void start()
     {
+        if(filterRegexStr != null && !filterRegexStr.trim().isEmpty())
+        {
+            try {
+                filterPattern = Pattern.compile(filterRegexStr);
+                log(String.format("Filter Pattern '%s' is active", filterPattern));    
+            } catch (Exception e) {
+                log("Filter pattern is invalid: " + e.getMessage());
+            }
+        }
+
         run();
         timer.schedule(this, interval, interval);
     }
@@ -138,7 +152,7 @@ public final class Agent extends TimerTask{
         cleanUnBlockedThreads();
         addBlockedThreads(threads.keySet());
         checkBlockedToLong();
-
+        
         return blockedToLong && shouldBeSaved() && saveThreadsDump(threads);
     }
 
@@ -152,7 +166,7 @@ public final class Agent extends TimerTask{
     private void addBlockedThreads(Set<Thread> threads)
     {
         threads.stream().filter(thread ->
-            (thread.getState() == Thread.State.BLOCKED)
+            (thread.getState() == Thread.State.BLOCKED) && (filterPattern == null || filterPattern.matcher(thread.getName()).matches())
         ).forEach(thread ->
             blockedThreads.putIfAbsent(thread, loopStartTime)
         );
