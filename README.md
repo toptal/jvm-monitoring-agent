@@ -36,6 +36,10 @@ Specifies how long thread needs to be blocked before dumps will be saved. (Milli
 
 Specifies delay between saving consecutive threads dumps. (Milliseconds)
 
+### `filterRegex=...`
+
+Specifies a regular expression to filter known blocked threads. (Milliseconds)
+
 
 # Examples
 
