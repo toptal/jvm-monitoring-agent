@@ -9,7 +9,7 @@
     </target>
 
     <target name="jar" depends="compile">
-        <property name="version" value="1.0.0"/>
+        <property name="version" value="1.1.0"/>
         <mkdir dir="dist"/>
         <jar destfile="dist/jvm-monitoring-agent-${version}.jar" basedir="build/classes">
             <manifest>
